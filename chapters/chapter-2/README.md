@@ -82,3 +82,45 @@ rand = "0.3.14"
 ```
 
 Crates are rust packages, and [crates.io](https://crates.io) is where people publish them.
+
+### Making it random
+
+```rust
+use rand::Rng;
+```
+
+To import random functionality.
+
+```rust
+let secret_number = rand::thread_rng().gen_range(1, 101);
+```
+
+* The rand::thread_rng function will give us the particular random number generator that we're going to use: one that is local to the current thread of execution and seeded by the operating system.
+*  The gen_range method takes two numbers as arguments and generates a random number between them. It’s inclusive on the lower bound but exclusive on the upper bound, so we need to specify 1 and 101 to request a number between 1 and 100.
+
+### Cargo docs
+
+```shell
+cargo doc --open
+```
+
+### Comparing values / Parsing strings
+
+```rust
+let guess: u32 = guess.trim().parse().expect("Please type a number!");
+
+println!("You guessed: {}", guess);
+
+match guess.cmp(&secret_number) {
+  Ordering::Less => println!("Too small!"),
+  Ordering::Greater => println!("Too big!"),
+  Ordering::Equal => println!("You win!"),
+}
+```
+
+* More info on the parse method: https://doc.rust-lang.org/std/primitive.str.html#method.parse
+* Rust allows shaddowing the guess (String) to a guess (u32).
+* Expect to unwrap the value
+* Like `Result`, `Ordering` is another enum, but the variants for `Ordering` are `Less`, `Greater`, and `Equal`. These are the three outcomes that are possible when you compare two values.
+* Pattern matching - https://doc.rust-lang.org/1.4.0/book/patterns.html
+
