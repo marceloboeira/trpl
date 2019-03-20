@@ -124,3 +124,8 @@ match guess.cmp(&secret_number) {
 * Like `Result`, `Ordering` is another enum, but the variants for `Ordering` are `Less`, `Greater`, and `Equal`. These are the three outcomes that are possible when you compare two values.
 * Pattern matching - https://doc.rust-lang.org/1.4.0/book/patterns.html
 
+### Loop Logic
+
+* `loop` - initializes a loop flow
+* `break` - breaks out of the loop
+* `continue` - jumps to the next loop run
