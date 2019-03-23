@@ -475,3 +475,28 @@ fn main() {
     println!("LIFTOFF!!!");
 }
 ```
+
+## Chapter Exercises
+
+### Multiple binaries on the same Cargo package
+
+```toml
+[package]
+...
+
+[[bin]]
+name = "temperature-converter"
+path = "src/temperature-converter.rs"
+
+[[bin]]
+name = "fibonacci"
+path = "src/fibonacci.rs"
+```
+
+### Temperature converter
+
+See `chapter-exercises/temperature-converter.rs`.
+
+### Fibonacci nth number
+
+See `chapter-exercises/fibonacci.rs`.

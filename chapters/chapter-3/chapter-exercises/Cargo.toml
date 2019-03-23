@@ -1,0 +1,15 @@
+[package]
+name = "chapter-exercises"
+version = "0.1.0"
+authors = ["Marcelo Boeira <me@marceloboeira.com>"]
+edition = "2018"
+
+[[bin]]
+name = "temperature-converter"
+path = "src/temperature-converter.rs"
+
+[[bin]]
+name = "fibonacci"
+path = "src/fibonacci.rs"
+
+[dependencies]
