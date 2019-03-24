@@ -319,3 +319,161 @@ fn calculate_length(s: String) -> (String, usize) {
 ```
 
 Even though, it's a bit tedious and burocratical, so, Luckily for us, Rust has a feature for this concept, called references.
+
+## Reference and Borrowing
+
+```rust
+fn main() {
+    let s1 = String::from("hello");
+
+    let len = calculate_length(&s1);
+
+    println!("The length of '{}' is {}.", s1, len);
+}
+
+fn calculate_length(s: &String) -> usize {
+    s.len()
+}
+```
+
+We now give `&s1` to the function and the function signature is expecting `&String`, `&` means `Referrence`.
+
+References allow a scope to refer to some value without taking ownership of it.
+
+```
+     s				|      s1      |   HEAP
+              |              |
+NAME | VALUE  | NAME | VALUE | INDEX | VALUE
+ ptr | --------> ptr | ----------> 0 | 'h'
+NAME | VALUE  |  len | 5     |     1 | 'e'
+              |  cap | 5     |     2 | 'l'
+              |              |     3 | 'l'
+              |              |     4 | '0'
+```
+
+The opposite of referencing by using & is dereferencing, which is accomplished with the dereference operator, *.
+
+* When we use a reference the compiler won't drop the value after "borrowing it"
+* There is no need to return the value, since the function never owned it, just a reference
+* You can't modify it, because it's immutable
+* Rust calls having references as function parameters **borrowing**
+
+```rust
+
+fn calculate_length(s: &String) -> usize { // s is a reference to a String
+    s.len()
+    } // Here, s goes out of scope. But because it does not have ownership of what
+      // it refers to, nothing happens.
+```
+
+We cant't mutate it...
+
+```rust
+fn main() {
+    let s = String::from("hello");
+
+    change(&s);
+}
+
+fn change(some_string: &String) {
+    some_string.push_str(", world");
+}
+```
+
+Just as variables are immutable by default, so are references. We're not allowed to modify something we have a reference to.
+
+### Mutable References
+
+```rust
+fn main() {
+    let mut s = String::from("hello");
+
+    change(&mut s);
+}
+
+fn change(some_string: &mut String) {
+    some_string.push_str(", world");
+}
+```
+
+* Update the `let` to be `mut`
+* Update the reference given, to be a mutable reference of s
+* Update the function type signature to expect a reference of a mutable String
+
+Everything works, as expected. However, there is a limitation: you can have only one mutable reference to a particular piece of data in a particular scope.
+
+This code will fail:
+
+```rust
+let mut s = String::from("hello");
+
+let r1 = &mut s;
+let r2 = &mut s;
+
+println!("{}, {}", r1, r2);
+```
+
+**Prevents data racing** - A data race is similar to a race condition and happens when these three behaviors occur:
+* Two or more pointers access the same data at the same time.
+* At least one of the pointers is being used to write to the data.
+* There's no mechanism being used to synchronize access to the data.
+
+The limitation is per scope, so with multiple contexts/scopes, should be reasonable to allow that:
+
+```rust
+let mut s = String::from("hello");
+
+{
+    let r1 = &mut s;
+
+} // r1 goes out of scope here, so we can make a new reference with no problems.
+
+let r2 = &mut s;
+```
+
+Important to notice that, this doens't apply to immutable references:
+
+```rust
+let mut s = String::from("hello");
+
+let r1 = &s; // no problem
+let r2 = &s; // no problem
+let r3 = &mut s; // BIG PROBLEM
+
+println!("{}, {}, and {}", r1, r2, r3);
+```
+
+`r1` and `r2` are okay, nothing breaks if 2 things are reading from the same immutable reference, whereas, `r3` creates a problem, since you have a 3rd thing being able to update that reference while other are reading from it (on the same scope).
+
+### Dangling References
+
+A dangling reference is something quite common on languages with pointers. Basically, it's the result of a pointer that still exists, even though it's referred memory was already freed. In rust, the compiler guaratees that this doesn't exist anymore.
+
+e.g.:
+
+```rust
+fn main() {
+    let reference_to_nothing = dangle();
+}
+
+fn dangle() -> &String {
+    let s = String::from("hello");
+
+    &s
+}
+```
+
+* the let is trying to get the return of `dangle()`
+* dangle creates a `String`, and tries to return its reference, yet, since the `String` was created on its scope, should it leave outside of it? we would have then returned a reference to a String that had to be deallocated by the end of the scope.
+
+The solution would be to give ownership, by returning the full value itself.
+
+```rust
+fn no_dangle() -> String {
+    let s = String::from("hello");
+
+    s
+}
+```
+
+Ownership is moved out, and nothing is deallocated.
