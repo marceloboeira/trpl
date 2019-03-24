@@ -477,3 +477,171 @@ fn no_dangle() -> String {
 ```
 
 Ownership is moved out, and nothing is deallocated.
+
+## The Slice Type
+
+```rust
+fn first_word(s: &String) -> usize {
+    let bytes = s.as_bytes();
+
+    for (i, &item) in bytes.iter().enumerate() {
+        if item == b' ' {
+            return i;
+        }
+    }
+
+    s.len()
+}
+```
+
+* we'll cover iterators/enumerators on another chapter, for now, just think as a way to go over an structure
+* we check the space, if there is a space, we return then the index of that char for the string
+* otherwise, if there are no spaces, we return the size of the string...
+
+```rust
+fn main() {
+    let mut s = String::from("hello world");
+
+    let word = first_word(&s); // word will get the value 5
+
+    s.clear(); // this empties the String, making it equal to ""
+
+    // word still has the value 5 here, but there's no more string that
+    // we could meaningfully use the value 5 with. word is now totally invalid!
+}
+```
+
+The usage is quite stright forward, we now get first_word to receive a "read-only" reference of our string, and return the index of the first word.
+After that, we could still use our string, since we only borrowed the read-only reference, but we then use clear to empty the string.
+
+Having to worry about the index in word getting out of sync with the data in s is tedious and error prone!
+
+```rust
+fn second_word(s: &String) -> (usize, usize) {
+```
+
+### String slices
+
+A string slice is a reference to part of a String, and it looks like this:
+
+```rust
+let s = String::from("hello world");
+
+let hello = &s[0..5];
+let world = &s[6..11];
+```
+
+* Similar to a reference, but it refers to a range of he string, defined by [from..to]
+* We can use ..= to define that is an inclusive range.
+
+```rust
+let s = String::from("hello world");
+
+let hello = &s[0..=4];
+let world = &s[6..=10];
+```
+
+
+In memory, it looks like this:
+
+```
+STACK          |     HEAP
+               |
+  s            |
+NAME | VALUE   |  INDEX | VALUE
+ ptr | --------|->   0  |  h
+ len | 11      |     1  |  e
+ cap | 11      |     2  |  l
+               |     3  |  l
+  word         |     4  |  o
+NAME | VALUE   |     5  |
+ ptr | --------|->   6  |  w
+ len | 11      |     7  |  o
+ cap | 11      |     8  |  r
+                       ...
+```
+
+You can also use:
+* `[..2]` to start from the 0
+* `[2..]` to copy until the end
+* `[..]` return a full range
+
+We can the, rewrite our function to something like:
+
+```rust
+fn first_word(s: &String) -> &str {
+    let bytes = s.as_bytes();
+
+    for (i, &item) in bytes.iter().enumerate() {
+        if item == b' ' {
+            return &s[0..i];
+        }
+    }
+
+    &s[..]
+}
+```
+
+By always using references, the return is tight to the content, leaving no room for dangling indexes...
+
+```rust
+fn main() {
+    let mut s = String::from("hello world");
+
+    let word = first_word(&s);
+
+    s.clear(); // error!
+
+    println!("the first word is: {}", word);
+}
+```
+
+Now, we can't mutate anymore, since we borrowed a read reference to first_word.
+
+### String Literals Slices
+
+A signature with `&str` to `&str` allows us to use both literals as `String`.
+
+```rust
+fn first_word(s: &String) -> &str {}
+```
+
+### String Slice as Parameters
+
+```rust
+fn main() {
+    let my_string = String::from("hello world");
+
+    // first_word works on slices of `String`s
+    let word = first_word(&my_string[..]);
+
+    let my_string_literal = "hello world";
+
+    // first_word works on slices of string literals
+    let word = first_word(&my_string_literal[..]);
+
+    // Because string literals *are* string slices already,
+    // this works too, without the slice syntax!
+    let word = first_word(my_string_literal);
+}
+
+fn first_word(s: &str) -> &str {
+    for (i, c) in s.chars().enumerate() {
+        if c == ' ' {
+            return &s[..i]
+        }
+    }
+
+    &s[..]
+}
+```
+
+## Other Slices
+
+```rust
+let a = [1, 2, 3, 4, 5];
+
+let slice = &a[1..3];
+```
+
+The type is `&[i32]`.
