@@ -13,6 +13,7 @@ If at some point I believe this has a value to someone but me, I will update thi
 * [Chapter 2](chapters/chapter-2#chapter-2)
 * [Chapter 3](chapters/chapter-3#chapter-3)
 * [Chapter 4](chapters/chapter-4#chapter-4)
+* [Chapter 5](chapters/chapter-5#chapter-5)
 
 ## Docs
 
