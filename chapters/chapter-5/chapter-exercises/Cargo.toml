@@ -1,0 +1,40 @@
+[package]
+name = "chapter-exercises"
+version = "0.1.0"
+authors = ["Marcelo Boeira <me@marceloboeira.com>"]
+edition = "2018"
+
+[[bin]]
+name = "main1"
+path = "src/main1.rs"
+
+[[bin]]
+name = "main2"
+path = "src/main2.rs"
+
+[[bin]]
+name = "main3"
+path = "src/main3.rs"
+
+[[bin]]
+name = "main4"
+path = "src/main4.rs"
+
+[[bin]]
+name = "main5"
+path = "src/main5.rs"
+
+[[bin]]
+name = "main6"
+path = "src/main6.rs"
+
+[[bin]]
+name = "main7"
+path = "src/main7.rs"
+
+[[bin]]
+name = "main8"
+path = "src/main8.rs"
+
+
+[dependencies]
