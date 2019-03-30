@@ -123,7 +123,7 @@ m.call();
 
 See `example5.rs`.
 
-# The `Option` Enum and Its Advantages Over `Null` Values
+## The `Option` Enum and Its Advantages Over `Null` Values
 
 Usual Optional introduction...
 
@@ -165,5 +165,177 @@ fn main() {
     println!("{}", sum_optionals(Some(10), None)); // 10
     println!("{}", sum_optionals(None, Some(20))); // 20
     println!("{}", sum_optionals(Some(20), Some(30))); // 50
+}
+```
+
+## The `match` Control Flow Operator
+
+Match is really powerful, it allow us to control the flow based on types/enums of our program.
+
+```rust
+enum Coin {
+    Penny,
+    Nickel,
+    Dime,
+    Quarter,
+}
+
+fn to_cents(coin: Coin) -> u32 {
+    match coin {
+        Coin::Penny => 1,
+        Coin::Nickel => 5,
+        Coin::Dime => 10,
+        Coin::Quarter => 25,
+    }
+}
+```
+
+When match runs, it runs our expressions agains all the branches...
+
+There could be more into the branch itself...
+
+```rust
+ match coin {
+        Coin::Penny => {
+            println!("Lucky penny!");
+            1
+        },
+        Coin::Nickel => 5,
+        Coin::Dime => 10,
+        Coin::Quarter => 25,
+    }
+```
+
+See `example7.rs`.
+
+## Patterns that Bind to Values
+
+```rust
+#[derive(Debug)] // so we can inspect the state in a minute
+enum UsState {
+    Alabama,
+    Alaska,
+    // --snip--
+}
+
+enum Coin {
+    Penny,
+    Nickel,
+    Dime,
+    Quarter(UsState),
+}
+
+fn to_cents(coin: Coin) -> u32 {
+    match coin {
+        Coin::Penny => 1,
+        Coin::Nickel => 5,
+        Coin::Dime => 10,
+        Coin::Quarter(state) => {
+            println!("State quarter from {:?}!", state);
+            25
+        },
+    }
+}
+```
+
+See `example8.rs`.
+
+## Matching with `Option<T>`
+
+Example, from Option to Option...
+
+if something is there, `Some(x)`, we sum, otherwise, we return `None`.
+```rust
+fn plus_one(x: Option<i32>) -> Option<i32> {
+    match x {
+        None => None,
+        Some(i) => Some(i + 1),
+    }
+}
+
+let five = Some(5);
+let six = plus_one(five);
+let none = plus_one(None);
+```
+
+See `example6.rs`.
+
+## Matches Are Exhaustive
+
+One of the magics of `pattern matching` is that the compiler knows of your options and it forces your to make impossible states impossible...
+
+if you try something like:
+
+```rust
+fn plus_one(x: Option<i32>) -> Option<i32> {
+    match x {
+        Some(i) => Some(i + 1),
+    }
+}
+```
+
+you haven't matched all the patterns, you'll see something like:
+
+```
+error[E0004]: non-exhaustive patterns: `None` not covered
+ -->
+  |
+6 |         match x {
+  |               ^ pattern `None` not covered
+```
+
+## The `_` placeholder
+
+```rust
+let some_u8_value = 0u8;
+match some_u8_value {
+    1 => println!("one"),
+    3 => println!("three"),
+    5 => println!("five"),
+    7 => println!("seven"),
+    _ => (),
+}
+```
+
+Since patterns are exhaustive, for things un countless possibilities, you might take advantage of `_` for default behavior.
+Yet, try to avoid as much as possible.
+
+In a situation in which we care about only one of the cases. For this situation, Rust provides if let.
+
+## Concise Control Flow with `if let`
+
+```rust
+let some_u8_value = Some(0u8);
+match some_u8_value {
+    Some(3) => println!("three"),
+    _ => (),
+}
+```
+
+If you only want to use the value to compare and print or not, you can use:
+
+```rust
+if let Some(3) = some_u8_value {
+    println!("three");
+}
+```
+
+You can also have else, for default values:
+
+```rust
+let mut count = 0;
+match coin {
+    Coin::Quarter(state) => println!("State quarter from {:?}!", state),
+    _ => count += 1,
+}
+```
+
+
+```rust
+let mut count = 0;
+if let Coin::Quarter(state) = coin {
+    println!("State quarter from {:?}!", state);
+} else {
+    count += 1;
 }
 ```
