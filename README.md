@@ -16,6 +16,7 @@ If at some point I believe this has a value to someone but me, I will update thi
 * [Chapter 5](chapters/chapter-5#chapter-5)
 * [Chapter 6](chapters/chapter-6#chapter-6)
 * [Chapter 7](chapters/chapter-7#chapter-7)
+* [Chapter 8](chapters/chapter-8#chapter-8)
 
 ## Docs
 
