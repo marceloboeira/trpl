@@ -328,3 +328,143 @@ for b in "नमस्ते".bytes() {
 ```
 
 But be sure to remember that valid Unicode scalar values may be made up of more than 1 byte.
+
+# Storing Keys with Associated Values in Hash Maps
+
+Just like vectors, hash maps store their data on the heap. This `HashMap` has keys of type `String` and values of type `i32`.
+
+Like vectors, hash maps are homogeneous: all of the keys must have the same type, and all of the values must have the same type.
+
+```rust
+use std::collections::HashMap;
+
+let mut scores = HashMap::new();
+
+scores.insert(String::from("Blue"), 10);
+scores.insert(String::from("Yellow"), 50);
+```
+
+```rust
+use std::collections::HashMap;
+
+let teams  = vec![String::from("Blue"), String::from("Yellow")];
+let initial_scores = vec![10, 50];
+
+let scores: HashMap<_, _> = teams.iter().zip(initial_scores.iter()).collect();
+```
+
+# Hash Maps and Ownership
+
+### Creating a New Hash Map
+
+```rust
+use std::collections::HashMap;
+
+let field_name = String::from("Favorite color");
+let field_value = String::from("Blue");
+```
+
+### Zip
+
+```rust
+use std::collections::HashMap;
+
+let teams  = vec![String::from("Blue"), String::from("Yellow")];
+let initial_scores = vec![10, 50];
+
+let scores: HashMap<_, _> = teams.iter().zip(initial_scores.iter()).collect();
+```
+
+### Hash Maps and Ownership
+
+For types that implement the `Copy` trait, like `i32`, the values are **copied into the hash map**. For owned values like `String`, the values will be **moved and the hash map** will be the owner of those values.
+
+```rust
+use std::collections::HashMap;
+
+let field_name = String::from("Favorite color");
+let field_value = String::from("Blue");
+
+let mut map = HashMap::new();
+map.insert(field_name, field_value);
+// field_name and field_value are invalid at this point, try using them and
+// see what compiler error you get!
+```
+
+### Accessing Values in a Hash Map
+
+`get`:
+
+```rust
+use std::collections::HashMap;
+
+let mut scores = HashMap::new();
+
+scores.insert(String::from("Blue"), 10);
+scores.insert(String::from("Yellow"), 50);
+
+let team_name = String::from("Blue");
+let score = scores.get(&team_name);
+```
+
+Multiple with iterator:
+
+```rust
+use std::collections::HashMap;
+
+let mut scores = HashMap::new();
+
+scores.insert(String::from("Blue"), 10);
+scores.insert(String::from("Yellow"), 50);
+
+for (key, value) in &scores {
+    println!("{}: {}", key, value);
+}
+```
+
+## Updating a Hash Map
+
+### Overwriting a Value
+
+```rust
+use std::collections::HashMap;
+
+let mut scores = HashMap::new();
+
+scores.insert(String::from("Blue"), 10);
+scores.insert(String::from("Blue"), 25);
+
+println!("{:?}", scores);
+```
+
+### Only Inserting a Value If the Key Has No Value
+
+```rust
+use std::collections::HashMap;
+
+let mut scores = HashMap::new();
+scores.insert(String::from("Blue"), 10);
+
+scores.entry(String::from("Yellow")).or_insert(50);
+scores.entry(String::from("Blue")).or_insert(50);
+
+println!("{:?}", scores);
+```
+
+### Updating a Value Based on the Old Value
+
+```rust
+use std::collections::HashMap;
+
+let text = "hello world wonderful world";
+
+let mut map = HashMap::new();
+
+for word in text.split_whitespace() {
+    let count = map.entry(word).or_insert(0);
+    *count += 1;
+}
+
+println!("{:?}", map);
+```
+

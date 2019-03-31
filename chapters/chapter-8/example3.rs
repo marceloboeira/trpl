@@ -19,7 +19,7 @@ fn main() {
         match r {
             SpreadsheetCell::Int(i) => println!("This is an Int cell, with value: {}", i),
             SpreadsheetCell::Float(f) => println!("This is a Float cell, with value: {}", f),
-            SpreadsheetCell::Text(t) => println!("This is an Text cell, with value: {}", t)
+            SpreadsheetCell::Text(t) => println!("This is an Text cell, with value: {}", t),
         }
     }
 }
