@@ -1,0 +1,15 @@
+[package]
+name = "errors"
+version = "0.1.0"
+authors = ["Marcelo Boeira <me@marceloboeira.com>"]
+edition = "2018"
+
+[dependencies]
+
+[[bin]]
+name = "main1"
+path = "src/main1.rs"
+
+[[bin]]
+name = "main2"
+path = "src/main2.rs"
