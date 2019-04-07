@@ -468,3 +468,6 @@ for word in text.split_whitespace() {
 println!("{:?}", map);
 ```
 
+## Hashing Functions
+
+There are multiple trade-offs when creating hash functions, and Rust allow us to choose either Hashing libraries with different hashing functions or even to decice ourselves for hashing functions and implement traits for that.
