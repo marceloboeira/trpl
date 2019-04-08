@@ -13,3 +13,19 @@ path = "src/main1.rs"
 [[bin]]
 name = "main2"
 path = "src/main2.rs"
+
+[[bin]]
+name = "result1"
+path = "src/result1.rs"
+
+[[bin]]
+name = "result2"
+path = "src/result2.rs"
+
+[[bin]]
+name = "unwrap"
+path = "src/unwrap.rs"
+
+[[bin]]
+name = "expect"
+path = "src/expect.rs"
