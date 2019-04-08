@@ -7,3 +7,4 @@
 * [Chapter 7](chapters/chapter-7#chapter-7)
 * [Chapter 8](chapters/chapter-8#chapter-8)
 * [Chapter 9](chapters/chapter-9#chapter-9)
+* [Chapter 10](chapters/chapter-10#chapter-10)
