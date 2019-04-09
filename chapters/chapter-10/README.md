@@ -309,3 +309,273 @@ fn main() {
 
 The process of monomorphization makes Rust's generics extremely efficient at runtime.
 
+## Traits: Defining Shared Behavior
+
+A trait tells the Rust compiler about functionality a particular type has and can share with other types. We can use traits to define shared behavior in an abstract way. We can use trait bounds to specify that a generic can be any type that has certain behavior.
+
+Note: Traits are similar to a feature often called interfaces in other languages, although with some differences.
+
+### Defining a Trait
+
+* A trait tells the compiler about behavior that can be shared across types.
+* We can use traits to define shared behavior in an abstract way.
+* We can use trait bounds to specify that a generic can be any type that has certain behavior.
+* It is similar to `interfaces` on other languages.
+
+
+```rust
+pub trait Summary {
+    fn summarize(&self) -> String;
+}
+```
+
+### Implementing a Trait on a Type
+
+```rust
+pub struct NewsArticle {
+    pub headline: String,
+    pub location: String,
+    pub author: String,
+    pub content: String,
+}
+
+impl Summary for NewsArticle {
+    fn summarize(&self) -> String {
+        format!("{}, by {} ({})", self.headline, self.author, self.location)
+    }
+}
+
+pub struct Tweet {
+    pub username: String,
+    pub content: String,
+    pub reply: bool,
+    pub retweet: bool,
+}
+
+impl Summary for Tweet {
+    fn summarize(&self) -> String {
+        format!("{}: {}", self.username, self.content)
+    }
+}
+```
+
+See `traits1.rs`.
+
+
+### Default Implementations
+
+```rust
+pub trait Summary {
+    fn summarize(&self) -> String {
+        String::from("(Read more...)")
+    }
+}
+```
+
+See `traits2.rs`.
+
+### Traits as arguments
+
+See `traits3.rs`.
+
+```rust
+pub trait Summary {
+    fn summarize(&self) -> String;
+}
+
+pub struct Tweet {
+    pub username: String,
+    pub content: String,
+    pub reply: bool,
+    pub retweet: bool,
+}
+
+impl Summary for Tweet {
+    fn summarize(&self) -> String {
+        format!("{}: {}", self.username, self.content)
+    }
+}
+
+pub fn notify(item: impl Summary) {
+    println!("Breaking news! {}", item.summarize());
+}
+
+fn main() {
+    let tweet = Tweet {
+        username: String::from("horse_ebooks"),
+        content: String::from("of course, as you probably already know, people"),
+        reply: false,
+        retweet: false,
+    };
+
+    notify(tweet);
+}
+```
+
+### Trait Bounds
+
+The previous implementation of notify works for short examples, yet, it is a syntax sugar for:
+
+```rust
+pub fn notify<T: Summary>(item: T) {
+    println!("Breaking news! {}", item.summarize());
+}
+```
+
+This is called trait bound. The second version becomes less verbose over time... e.g.:
+
+```rust
+pub fn notify(item1: impl Summary, item2: impl Summary) {
+// vs
+pub fn notify<T: Summary>(item1: T, item2: T) {
+```
+
+### Specify multiple Traits with `+`
+
+Sometimes, a function will required more than 1 trait to be implemented for its attribute...
+
+```rust
+pub fn notify(item: impl Summary + Display) {
+```
+
+Same is valid for trait bounds:
+```rust
+pub fn notify<T: Summary + Display>(item: T) {
+```
+
+### `where` clauses for clearer code
+
+If you have multiple traits, the code looks a bit messed up:
+
+```rust
+fn some_function<T: Display + Clone, U: Clone + Debug>(t: T, u: U) -> i32 {
+```
+
+In order to scale that, we can use where clauses:
+
+```rust
+fn some_function<T, U>(t: T, u: U) -> i32
+    where T: Display + Clone,
+          U: Clone + Debug
+{
+```
+
+### Returning Traits
+
+```rust
+fn returns_summarizable() -> impl Summary {
+    Tweet {
+        username: String::from("horse_ebooks"),
+        content: String::from("of course, as you probably already know, people"),
+        reply: false,
+        retweet: false,
+    }
+}
+```
+
+This signature says, “I’m going to return something that implements the Summary trait, but I’m not going to tell you the exact type.” In our case, we’re returning a Tweet, but the caller doesn’t know that.
+
+However, this doesn't work:
+
+```rust
+fn returns_summarizable(switch: bool) -> impl Summary {
+    if switch {
+        NewsArticle {
+            headline: String::from("Penguins win the Stanley Cup Championship!"),
+            location: String::from("Pittsburgh, PA, USA"),
+            author: String::from("Iceburgh"),
+            content: String::from("The Pittsburgh Penguins once again are the best
+            hockey team in the NHL."),
+        }
+    } else {
+        Tweet {
+            username: String::from("horse_ebooks"),
+            content: String::from("of course, as you probably already know, people"),
+            reply: false,
+            retweet: false,
+        }
+    }
+}
+```
+
+This cannot work, due to restrictions around how impl Trait works. More on Chapter 17.
+
+### Fixing the largest Function with Trait Bounds
+
+
+```rust
+fn largest<T>(list: &[T]) -> T {
+    let mut l = list[0];
+
+    for &item in list.iter() {
+        if item > l {
+            l = item;
+        }
+    }
+
+    l
+}
+
+fn main() {
+    let number_list = vec![34, 50, 25, 100, 65];
+
+    let result = largest(&number_list);
+    println!("The largest number is {}", result);
+
+    let char_list = vec!['y', 'm', 'a', 'q'];
+
+    let result = largest(&char_list);
+    println!("The largest char is {}", result);
+}
+```
+
+We need to update the signature to be like:
+```rust
+fn largest<T: PartialOrd + Copy>(list: &[T]) -> T {
+```
+
+* PartialOrd - Adds behavior for ordering
+* Copy - Allows values to be copied from memory rathar than pointed (we're talking only about stack values, not heap).
+
+
+### Using Trait Bounds to Conditionally Implement Methods
+
+When we implement a trait, we can implement to its extreme generic type, T, to the extreme specialized type e.g.: i32, or even, to types that are in between, for instance, any type that also implements PartialOrd.
+
+e.g.:
+
+```rust
+use std::fmt::Display;
+
+struct Pair<T> {
+    x: T,
+    y: T,
+}
+
+impl<T> Pair<T> {
+    fn new(x: T, y: T) -> Self {
+        Self {
+            x,
+            y,
+        }
+    }
+}
+
+impl<T: Display + PartialOrd> Pair<T> {
+    fn cmp_display(&self) {
+        if self.x >= self.y {
+            println!("The largest member is x = {}", self.x);
+        } else {
+            println!("The largest member is y = {}", self.y);
+        }
+    }
+}
+```
+
+We can also conditionally implement a trait for any type that implements another trait. Implementations of a trait on any type that satisfies the trait bounds are called blanket implementations and are extensively used in the Rust standard library. For example, the standard library implements the ToString trait on any type that implements the Display trait. The impl block in the standard library looks similar to this code:
+
+```rust
+impl<T: Display> ToString for T {
+    // --snip--
+}
+```
