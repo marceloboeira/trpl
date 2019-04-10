@@ -102,4 +102,10 @@ mod tests {
 	    Err(String::from("two plus two does not equal four"))
 	}
     }
+
+    #[test]
+    #[ignore]
+    fn it_is_ignored() {
+	panic!("Should not run")
+    }
 }
