@@ -138,3 +138,167 @@ fn parse_config(args: &[String]) -> (&str, &str) {
     (query, filename)
 }
 ```
+
+### Grouping Configuration Values
+
+```rust
+fn main() {
+    let args: Vec<String> = env::args().collect();
+
+    let config = parse_config(&args);
+
+    println!("Searching for {}", config.query);
+    println!("In file {}", config.filename);
+
+    let contents = fs::read_to_string(config.filename)
+        .expect("Something went wrong reading the file");
+
+    // --snip--
+}
+
+struct Config {
+    query: String,
+    filename: String,
+}
+
+fn parse_config(args: &[String]) -> Config {
+    let query = args[1].clone();
+    let filename = args[2].clone();
+
+    Config { query, filename }
+}
+```
+#### The Trade-Offs of Using clone
+
+There’s a tendency among many Rustaceans to avoid using clone to fix ownership problems because of its runtime cost. In Chapter 13, you’ll learn how to use more efficient methods in this type of situation. But for now, it’s okay to copy a few strings to continue making progress because you’ll make these copies only once and your filename and query string are very small. It’s better to have a working program that’s a bit inefficient than to try to hyperoptimize code on your first pass. As you become more experienced with Rust, it’ll be easier to start with the most efficient solution, but for now, it’s perfectly acceptable to call clone.
+
+### Creating a Constructor for `Config`
+
+```rust
+fn main() {
+    let args: Vec<String> = env::args().collect();
+
+    let config = Config::new(&args);
+
+    // --snip--
+}
+
+// --snip--
+
+impl Config {
+    fn new(args: &[String]) -> Config {
+        let query = args[1].clone();
+        let filename = args[2].clone();
+
+        Config { query, filename }
+    }
+}
+```
+
+### Fixing the Error Handling
+
+```
+cargo run
+   Compiling minigrep v0.1.0 (file:///projects/minigrep)
+    Finished dev [unoptimized + debuginfo] target(s) in 0.0 secs
+     Running `target/debug/minigrep`
+thread 'main' panicked at 'index out of bounds: the len is 1
+but the index is 1', src/main.rs:29:21
+note: Run with `RUST_BACKTRACE=1` for a backtrace.
+```
+
+```
+index out of bounds: the len is 1 but the index is 1
+```
+
+#### Improving the Error Message
+
+```rust
+// --snip--
+fn new(args: &[String]) -> Config {
+    if args.len() < 3 {
+        panic!("not enough arguments");
+    }
+    // --snip--
+```
+
+### Returning a `Result` from new Instead of Calling `panic!`
+
+```rust
+impl Config {
+    fn new(args: &[String]) -> Result<Config, &'static str> {
+        if args.len() < 3 {
+            return Err("not enough arguments");
+        }
+
+        let query = args[1].clone();
+        let filename = args[2].clone();
+
+        Ok(Config { query, filename })
+    }
+}
+```
+
+### Extracting Logic from main
+
+```rust
+fn main() {
+    // --snip--
+
+    println!("Searching for {}", config.query);
+    println!("In file {}", config.filename);
+
+    run(config);
+}
+
+fn run(config: Config) {
+    let contents = fs::read_to_string(config.filename)
+        .expect("something went wrong reading the file");
+
+    println!("With text:\n{}", contents);
+}
+
+// --snip--
+```
+
+### Returning Errors from the run Function
+
+```rust
+use std::error::Error;
+
+// --snip--
+
+fn run(config: Config) -> Result<(), Box<dyn Error>> {
+    let contents = fs::read_to_string(config.filename)?;
+
+    println!("With text:\n{}", contents);
+
+    Ok(())
+}
+```
+
+```
+warning: unused `std::result::Result` which must be used
+  --> src/main.rs:18:5
+   |
+18 |     run(config);
+   |     ^^^^^^^^^^^^
+= note: #[warn(unused_must_use)] on by default
+```
+
+### Handling Errors Returned from run in main
+
+```rust
+fn main() {
+    // --snip--
+
+    println!("Searching for {}", config.query);
+    println!("In file {}", config.filename);
+
+    if let Err(e) = run(config) {
+        println!("Application error: {}", e);
+
+        process::exit(1);
+    }
+}
+```
