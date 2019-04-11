@@ -339,3 +339,143 @@ fn main() {
     }
 }
 ```
+
+## Developing the Library’s Functionality with Test-Driven Development
+
+1. Write a test that fails and run it to make sure it fails for the reason you expect.
+1. Write or modify just enough code to make the new test pass.
+1. Refactor the code you just added or changed and make sure the tests continue to pass.
+1. Repeat from step 1!
+
+### Writing a Failing Test
+
+```rust
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn one_result() {
+        let query = "duct";
+        let contents = "\
+Rust:
+safe, fast, productive.
+Pick three.";
+
+        assert_eq!(
+            vec!["safe, fast, productive."],
+            search(query, contents)
+        );
+    }
+}
+```
+
+```rust
+fn search<'a>(query: &str, contents: &'a str) -> Vec<&'a str> {
+    vec![]
+}
+```
+
+```rust
+error[E0106]: missing lifetime specifier
+ --> src/lib.rs:5:51
+  |
+5 | fn search(query: &str, contents: &str) -> Vec<&str> {
+  |                                                   ^ expected lifetime
+parameter
+  |
+  = help: this function's return type contains a borrowed value, but the
+  signature does not say whether it is borrowed from `query` or `contents`
+```
+
+### Writing Code to Pass the Test
+
+```rust
+fn search<'a>(query: &str, contents: &'a str) -> Vec<&'a str> {
+    let mut results = Vec::new();
+
+    for line in contents.lines() {
+        if line.contains(query) {
+            results.push(line);
+        }
+    }
+
+    results
+}
+```
+
+### Iterating Through Lines with the lines Method
+
+```rust
+fn search<'a>(query: &str, contents: &'a str) -> Vec<&'a str> {
+    for line in contents.lines() {
+        // do something with line
+    }
+}
+
+```
+
+### Searching Each Line for the Query
+
+```rust
+fn search<'a>(query: &str, contents: &'a str) -> Vec<&'a str> {
+    for line in contents.lines() {
+        if line.contains(query) {
+            // do something with line
+        }
+    }
+}
+```
+
+### Storing Matching Lines
+
+```rust
+fn search<'a>(query: &str, contents: &'a str) -> Vec<&'a str> {
+    let mut results = Vec::new();
+
+    for line in contents.lines() {
+        if line.contains(query) {
+            results.push(line);
+        }
+    }
+
+    results
+}
+```
+
+### Using the search Function in the run Function
+
+```rust
+pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
+    let contents = fs::read_to_string(config.filename)?;
+
+    for line in search(&config.query, &contents) {
+        println!("{}", line);
+    }
+
+    Ok(())
+}
+```
+
+```
+$ cargo run frog poem.txt
+   Compiling minigrep v0.1.0 (file:///projects/minigrep)
+    Finished dev [unoptimized + debuginfo] target(s) in 0.38 secs
+     Running `target/debug/minigrep frog poem.txt`
+How public, like a frog
+```
+
+```
+$ cargo run body poem.txt
+    Finished dev [unoptimized + debuginfo] target(s) in 0.0 secs
+     Running `target/debug/minigrep body poem.txt`
+I’m nobody! Who are you?
+Are you nobody, too?
+How dreary to be somebody!
+```
+
+```
+$ cargo run monomorphization poem.txt
+    Finished dev [unoptimized + debuginfo] target(s) in 0.0 secs
+     Running `target/debug/minigrep monomorphization poem.txt`
+```
