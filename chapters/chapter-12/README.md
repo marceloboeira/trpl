@@ -302,3 +302,40 @@ fn main() {
     }
 }
 ```
+
+### Splitting Code into a Library Crate
+
+```rust
+use std::error::Error;
+use std::fs;
+
+pub struct Config {
+    pub query: String,
+    pub filename: String,
+}
+
+impl Config {
+    pub fn new(args: &[String]) -> Result<Config, &'static str> {
+        // --snip--
+    }
+}
+
+pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
+    // --snip--
+}
+```
+
+```rust
+use std::env;
+use std::process;
+
+use grab;
+use grab::Config;
+
+fn main() {
+    // --snip--
+    if let Err(e) = grab::run(config) {
+        // --snip--
+    }
+}
+```
