@@ -10,3 +10,4 @@
 * [Chapter 10](chapters/chapter-10#chapter-10)
 * [Chapter 11](chapters/chapter-11#chapter-11)
 * [Chapter 12](chapters/chapter-12#chapter-12)
+* [Chapter 13](chapters/chapter-13#chapter-13)
