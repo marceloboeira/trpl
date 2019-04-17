@@ -1,3 +1,6 @@
 [submodule "chapters/chapter-12/grab"]
 	path = chapters/chapter-12/grab
 	url = git@github.com:marceloboeira/grab.git
+[submodule "chapters/chapter-13/grab"]
+	path = chapters/chapter-13/grab
+	url = git@github.com:marceloboeira/grab.git
