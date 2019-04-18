@@ -160,6 +160,105 @@ cargo yank --vers 1.0.1
 cargo yank --vers 1.0.1 --undo
 ```
 
+## Cargo Workspaces
+
+In Chapter 12, we built a package that included a binary crate and a library crate. As your project develops, you might find that the library crate continues to get bigger and you want to split up your package further into multiple library crates. In this situation, Cargo offers a feature called workspaces that can help manage multiple related packages that are developed in tandem.
+
+
+### Creating a Workspace
+
+See `add/`.
+
+```toml
+[workspace]
+
+members = [
+    "adder",
+]
+```
+
+```
+cargo new adder
+```
+
+### Creating the Second Crate in the Workspace
+
+```toml
+[workspace]
+
+members = [
+    "adder",
+    "add-one",
+]
+```
+
+```
+cargo new add-one --lib
+```
+
+```rust
+pub fn add_one(x: i32) -> i32 {
+    x + 1
+}
+```
+
+```shell
+cargo run -p adder
+    Finished dev [unoptimized + debuginfo] target(s) in 0.0 secs
+     Running `target/debug/adder`
+Hello, world! 10 plus one is 11!
+```
+
+### Depending on an External Crate in a Workspace
+
+```toml
+[dependencies]
+
+rand = "0.3.14"
+```
+
+### Adding a Test to a Workspace
+
+```rust
+pub fn add_one(x: i32) -> i32 {
+    x + 1
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn it_works() {
+        assert_eq!(3, add_one(2));
+    }
+}
+```
+
+```
+$ cargo test
+   Compiling add-one v0.1.0 (file:///projects/add/add-one)
+   Compiling adder v0.1.0 (file:///projects/add/adder)
+    Finished dev [unoptimized + debuginfo] target(s) in 0.27 secs
+     Running target/debug/deps/add_one-f0253159197f7841
+
+running 1 test
+test tests::it_works ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
+
+     Running target/debug/deps/adder-f88af9d2cc175a5e
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
+
+   Doc-tests add-one
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
+```
 ### Installing Binaries from Crates.io with `cargo install`
 
 The cargo install command allows you to install and use binary crates locally. This isn’t intended to replace system packages; it’s meant to be a convenient way for Rust developers to install tools that others have shared on crates.io.
@@ -173,3 +272,9 @@ Updating registry `https://github.com/rust-lang/crates.io-index`
     Finished release [optimized + debuginfo] target(s) in 97.91 secs
   Installing ~/.cargo/bin/rg
 ```
+
+###Extending Cargo with Custom Commands
+
+Cargo is designed so you can extend it with new subcommands without having to modify Cargo. If a binary in your $PATH is named cargo-something, you can run it as if it was a Cargo subcommand by running cargo something. Custom commands like this are also listed when you run cargo --list. Being able to use cargo install to install extensions and then run them just like the built-in Cargo tools is a super convenient benefit of Cargo’s design!
+
+Sharing code with Cargo and crates.io is part of what makes the Rust ecosystem useful for many different tasks. Rust’s standard library is small and stable, but crates are easy to share, use, and improve on a timeline different from that of the language. Don’t be shy about sharing code that’s useful to you on crates.io; it’s likely that it will be useful to someone else as well! 

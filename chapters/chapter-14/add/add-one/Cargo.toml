@@ -1,0 +1,9 @@
+[package]
+name = "add-one"
+version = "0.1.0"
+authors = ["Marcelo Boeira <me@marceloboeira.com>"]
+edition = "2018"
+
+[dependencies]
+
+rand = "0.3.14"
