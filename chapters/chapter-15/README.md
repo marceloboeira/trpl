@@ -43,14 +43,12 @@ fn main() {
 }
 ```
 
-
 See `example01.rs`.
 
 ### Enabling Recursive Types with Boxes
 At compile time, Rust needs to know how much space a type takes up. One type whose size can’t be known at compile time is a recursive type, where a value can have as part of itself another value of the same type. Because this nesting of values could theoretically continue infinitely, Rust doesn’t know how much space a value of a recursive type needs. However, boxes have a known size, so by inserting a box in a recursive type definition, you can have recursive types.
 
 Let’s explore the cons list, which is a data type common in functional programming languages, as an example of a recursive type. The cons list type we’ll define is straightforward except for the recursion; therefore, the concepts in the example we’ll work with will be useful any time you get into more complex situations involving recursive types.
-
 
 #### More Information About the Cons List
 
@@ -342,7 +340,7 @@ Imagine Rc<T> as a TV in a family room. When one person enters to watch TV, they
 
 We use the Rc<T> type when we want to allocate some data on the heap for multiple parts of our program to read and we can’t determine at compile time which part will finish using the data last. If we knew which part would finish last, we could just make that part the data’s owner, and the normal ownership rules enforced at compile time would take effect.
 
-Note that Rc<T> is only for use in single-threaded scenarios. When we discuss concurrency in Chapter 16, we’ll cover how to do reference counting in multithreaded programs.
+**Note that Rc<T> is only for use in single-threaded scenarios. When we discuss concurrency in Chapter 16, we’ll cover how to do reference counting in multithreaded programs.**
 
 ### Using Rc<T> to Share Data
 
@@ -369,6 +367,7 @@ fn main() {
 }
 ```
 
+It fails since:
 ```
 error[E0382]: use of moved value: `a`
   --> src/main.rs:13:30
@@ -381,6 +380,8 @@ error[E0382]: use of moved value: `a`
    = note: move occurs because `a` has type `List`, which does not implement
    the `Copy` trait
 ```
+
+That's the scenario where `Rc<T>` is useful:
 
 ```rust
 enum List {
@@ -397,6 +398,8 @@ fn main() {
     let c = Cons(4, Rc::clone(&a));
 }
 ```
+
+See `example09.rs`.
 
 ### Cloning an Rc<T> Increases the Reference Count
 
@@ -420,3 +423,5 @@ count after creating b = 2
 count after creating c = 3
 count after c goes out of scope = 2
 ```
+
+See `example10.rs`.
