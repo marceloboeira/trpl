@@ -16,3 +16,4 @@
 * [Chapter 16](chapters/chapter-16#chapter-16)
 * [Chapter 17](chapters/chapter-17#chapter-17)
 * [Chapter 18](chapters/chapter-18#chapter-18)
+* [Chapter 19](chapters/chapter-19#chapter-19)
