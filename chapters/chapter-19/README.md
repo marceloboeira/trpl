@@ -117,6 +117,8 @@ fn main() {
 }
 ```
 
+See `example04.rs`.
+
 #### Accessing or Modifying a Mutable Static Variable
 
 ```rust
@@ -145,6 +147,8 @@ fn main() {
 }
 ```
 
+See `example05.rs`.
+
 ### Implementing an Unsafe Trait
 
 ```rust
@@ -160,3 +164,197 @@ unsafe impl Foo for i32 {
 ### When to Use Unsafe Code
 
 Using unsafe to take one of the four actions (superpowers) just discussed isn’t wrong or even frowned upon. But it is trickier to get unsafe code correct because the compiler can’t help uphold memory safety. When you have a reason to use unsafe code, you can do so, and having the explicit unsafe annotation makes it easier to track down the source of problems if they occur.
+
+## Advanced Lifetimes
+
+
+* Lifetime subtyping: ensures that one lifetime outlives another lifetime
+* Lifetime bounds: specifies a lifetime for a reference to a generic type
+* Inference of trait object lifetimes: allows the compiler to infer trait object lifetimes and when they need to be specified
+
+### Ensuring One Lifetime Outlives Another with Lifetime Subtyping
+
+Lifetime subtyping specifies that one lifetime should outlive another lifetime. To explore lifetime subtyping, imagine we want to write a parser.
+
+```rust
+struct Context(&str);
+
+struct Parser {
+    context: &Context,
+}
+
+impl Parser {
+    fn parse(&self) -> Result<(), &str> {
+        Err(&self.context.0[1..])
+    }
+}
+```
+
+Compiling the code results in errors because Rust expects lifetime parameters on the string slice in Context and the reference to a Context in Parser.
+
+he most straightforward way to do this is to use the same lifetime name everywhere:
+
+```rust
+struct Context<'a>(&'a str);
+
+struct Parser<'a> {
+    context: &'a Context<'a>,
+}
+
+impl<'a> Parser<'a> {
+    fn parse(&self) -> Result<(), &str> {
+        Err(&self.context.0[1..])
+    }
+}
+```
+
+Next, let's try to use the context for a parsing function:
+
+```rust
+fn parse_context(context: Context) -> Result<(), &str> {
+    Parser { context: &context }.parse()
+}
+```
+
+```
+error[E0597]: borrowed value does not live long enough
+  --> src/lib.rs:14:5
+   |
+14 |     Parser { context: &context }.parse()
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ does not live long enough
+15 | }
+   | - temporary value only lives until here
+   |
+note: borrowed value must be valid for the anonymous lifetime #1 defined on the function body at 13:1...
+  --> src/lib.rs:13:1
+   |
+13 | / fn parse_context(context: Context) -> Result<(), &str> {
+14 | |     Parser { context: &context }.parse()
+15 | | }
+   | |_^
+
+error[E0597]: `context` does not live long enough
+  --> src/lib.rs:14:24
+   |
+14 |     Parser { context: &context }.parse()
+   |                        ^^^^^^^ does not live long enough
+15 | }
+   | - borrowed value only lives until here
+   |
+note: borrowed value must be valid for the anonymous lifetime #1 defined on the function body at 13:1...
+  --> src/lib.rs:13:1
+   |
+13 | / fn parse_context(context: Context) -> Result<(), &str> {
+14 | |     Parser { context: &context }.parse()
+15 | | }
+   | |_^
+```
+
+These errors state that the Parser instance that is created and the context parameter live only until the end of the parse_context function. But they both need to live for the entire lifetime of the function.
+
+In other words, Parser and context need to outlive the entire function and be valid before the function starts as well as after it ends for all the references in this code to always be valid. The Parser we’re creating and the context parameter go out of scope at the end of the function, because parse_context takes ownership of context.
+
+```rust
+  fn parse(&self) -> Result<(), &str> {
+```
+
+```rust
+    fn parse<'a>(&'a self) -> Result<(), &'a str> {
+```
+
+```rust
+struct Context<'s>(&'s str);
+
+struct Parser<'c, 's> {
+    context: &'c Context<'s>,
+}
+
+impl<'c, 's> Parser<'c, 's> {
+    fn parse(&self) -> Result<(), &'s str> {
+        Err(&self.context.0[1..])
+    }
+}
+
+fn parse_context(context: Context) -> Result<(), &str> {
+    Parser { context: &context }.parse()
+}
+```
+
+which fails because:
+
+```
+error[E0491]: in type `&'c Context<'s>`, reference has a longer lifetime than the data it references
+ --> src/lib.rs:4:5
+  |
+4 |     context: &'c Context<'s>,
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+note: the pointer is valid for the lifetime 'c as defined on the struct at 3:1
+ --> src/lib.rs:3:1
+  |
+3 | / struct Parser<'c, 's> {
+4 | |     context: &'c Context<'s>,
+5 | | }
+  | |_^
+note: but the referenced data is only valid for the lifetime 's as defined on the struct at 3:1
+ --> src/lib.rs:3:1
+  |
+3 | / struct Parser<'c, 's> {
+4 | |     context: &'c Context<'s>,
+5 | | }
+  | |_^
+```
+Rust doesn’t know of any relationship between 'c and 's. To be valid, the referenced data in Context with lifetime 's needs to be constrained to guarantee that it lives longer than the reference with lifetime 'c. If 's is not longer than 'c, the reference to Context might not be valid.
+
+Finally,
+
+```rust
+struct Parser<'c, 's: 'c> {
+    context: &'c Context<'s>,
+}
+```
+
+See `example06.rs`.
+
+### Lifetime Bounds on References to Generic Types
+
+```rust
+struct Ref<'a, T>(&'a T);
+```
+
+```
+error[E0309]: the parameter type `T` may not live long enough
+ --> src/lib.rs:1:19
+   |
+   1 | struct Ref<'a, T>(&'a T);
+     |                   ^^^^^^
+       |
+         = help: consider adding an explicit lifetime bound `T: 'a`...
+         note: ...so that the reference type `&'a T` does not outlive the data it points at
+          --> src/lib.rs:1:19
+            |
+            1 | struct Ref<'a, T>(&'a T);
+              |                   ^^^^^^''`'`'
+```
+### Inference of Trait Object Lifetimes
+
+```rust
+trait Red { }
+
+struct Ball<'a> {
+    diameter: &'a i32,
+}
+
+impl<'a> Red for Ball<'a> { }
+
+fn main() {
+    let num = 5;
+
+    let obj = Box::new(Ball { diameter: &num }) as Box<dyn Red>;
+}
+```
+
+* The default lifetime of a trait object is 'static.
+* With &'a Trait or &'a mut Trait, the default lifetime of the trait object is 'a.
+* With a single T: 'a clause, the default lifetime of the trait object is 'a.
+* With multiple clauses like T: 'a, there is no default lifetime; we must be explicit'''
