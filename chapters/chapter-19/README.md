@@ -566,3 +566,175 @@ fn main() {
 ```
 
 See `example13.rs`.
+
+## Advanced Types
+
+### Using the Newtype Pattern for Type Safety and Abstraction
+
+### Creating Type Synonyms with Type Aliases
+
+```rust
+type Kilometers = i32;
+
+let x: i32 = 5;
+let y: Kilometers = 5;
+
+println!("x + y = {}", x + y);
+```
+
+Pretty much like haskell, no mistery here...
+
+### The Never Type that Never Returns
+
+```rust
+fn bar() -> ! {
+    // --snip--
+}
+```
+
+```rust
+let guess: u32 = match guess.trim().parse() {
+    Ok(num) => num,
+    Err(_) => continue,
+};
+```
+
+However, this doesn't work:
+```rust
+let guess = match guess.trim().parse() {
+    Ok(_) => 5,
+    Err(_) => "hello",
+}
+```
+
+The types must be the same, in order to make it work we use the `!` never type, look at how for instance, `unwrap` expands:
+
+```rust
+impl<T> Option<T> {
+    pub fn unwrap(self) -> T {
+        match self {
+            Some(val) => val,
+            None => panic!("called `Option::unwrap()` on a `None` value"),
+        }
+    }
+}
+```
+
+last, but not least, `loop`, which returns `!` since the loop could run forever....
+
+```rust
+print!("forever ");
+
+loop {
+    print!("and ever ");
+}
+```
+
+### Dynamically Sized Types and the Sized Trait
+
+```rust
+let s1: str = "Hello there!";
+let s2: str = "How's it going?";
+```
+
+Rust needs to know how much memory to allocate for any value of a particular type, and all values of a type must use the same amount of memory
+
+To work with DSTs, Rust has a particular trait called the Sized trait to determine whether or not a type’s size is known at compile time.
+
+```rust
+fn generic<T>(t: T) {
+    // --snip--
+}
+```
+
+is actually treated as though we had written this:
+
+```rust
+fn generic<T: Sized>(t: T) {
+    // --snip--
+}
+```
+
+By default, generic functions will work only on types that have a known size at compile time. However, you can use the following special syntax to relax this restriction:
+
+```rust
+fn generic<T: ?Sized>(t: &T) {
+    // --snip--
+}
+```
+
+
+## Advanced Functions and Closures
+
+### Function Pointers
+
+* Function Pointer - Functions coerce to the type fn (with a lowercase f)
+* Not to be confused with the `Fn` closure trait.
+
+```rust
+fn add_one(x: i32) -> i32 {
+    x + 1
+}
+
+fn do_twice(f: fn(i32) -> i32, arg: i32) -> i32 {
+    f(arg) + f(arg)
+}
+
+fn main() {
+    let answer = do_twice(add_one, 5);
+
+    println!("The answer is: {}", answer);
+}
+```
+
+See `example15.rs`.
+
+Hability of sending functions as arguments:
+
+```rust
+let list_of_numbers = vec![1, 2, 3];
+let list_of_strings: Vec<String> = list_of_numbers
+    .iter()
+    .map(|i| i.to_string())
+    .collect();
+```
+
+
+We could simply:
+
+```rust
+let list_of_numbers = vec![1, 2, 3];
+let list_of_strings: Vec<String> = list_of_numbers
+    .iter()
+    .map(ToString::to_string)
+    .collect();
+```
+
+```rust
+enum Status {
+    Value(u32),
+    Stop,
+}
+
+let list_of_statuses: Vec<Status> =
+    (0u32..20)
+    .map(Status::Value)
+    .collect();
+```
+
+See `example16.rs`.
+
+### Returning Closures
+
+```rust
+fn returns_closure() -> Fn(i32) -> i32 {
+    |x| x + 1
+}
+```
+Rust doesn’t know how much space it will need to store the closure. We saw a solution to this problem earlier. We can use a trait object:
+
+```rust
+fn returns_closure() -> Box<dyn Fn(i32) -> i32> {
+    Box::new(|x| x + 1)
+}
+```
