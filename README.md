@@ -7,6 +7,8 @@ If you are looking for solutions to the exercises, I would recommend getting the
 
 If at some point I believe this has a value to someone but me, I will update this file with usefull information.
 
+More info: 📚 [marceloboeira](https://github.com/marceloboeira/knowledge)/[knowledge](https://github.com/marceloboeira/knowledge).
+
 ## Table of Contents
 
 * [Chapter 1](chapters/chapter-1#chapter-1)
@@ -28,6 +30,10 @@ If at some point I believe this has a value to someone but me, I will update thi
 * [Chapter 17](chapters/chapter-17#chapter-17)
 * [Chapter 18](chapters/chapter-18#chapter-18)
 * [Chapter 19](chapters/chapter-19#chapter-19)
+
+### Sub-Projects
+
+  * 👋🏼 [marceloboeira](https://github.com/marceloboeira/knowledge)/[grab](https://github.com/marceloboeira/grab) - Related to chapter 12 && 13.
 
 ## Docs
 
