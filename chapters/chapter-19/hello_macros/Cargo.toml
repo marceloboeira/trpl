@@ -1,0 +1,8 @@
+[package]
+name = "hello_macros"
+version = "0.1.0"
+authors = ["Marcelo Boeira <me@marceloboeira.com>"]
+edition = "2018"
+
+[dependencies]
+hello_macro_derive = { path = "../hello_macros/hello_macro_derive" }

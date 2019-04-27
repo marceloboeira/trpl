@@ -663,7 +663,6 @@ fn generic<T: ?Sized>(t: &T) {
 }
 ```
 
-
 ## Advanced Functions and Closures
 
 ### Function Pointers
@@ -698,7 +697,6 @@ let list_of_strings: Vec<String> = list_of_numbers
     .map(|i| i.to_string())
     .collect();
 ```
-
 
 We could simply:
 
@@ -738,3 +736,137 @@ fn returns_closure() -> Box<dyn Fn(i32) -> i32> {
     Box::new(|x| x + 1)
 }
 ```
+
+## Macros
+
+We’ve used macros like `println!` throughout this book, but we haven’t fully explored what a macro is and how it works. Macros refers to a family of features in Rust:
+
+* Declarative macros with `macro_rules!`
+* Procedural macros, which come in three kinds:
+  * Custom `#[derive]` macros
+  * Attribute-like macros
+  * Function-like macros
+
+### The Difference Between Macros and Functions
+
+* Fundamentally, macros are a way of writing code that writes other code, which is known as metaprogramming.
+* Metaprogramming is useful for reducing the amount of code you have to write and maintain, which is also one of the roles of functions. However, macros have some additional powers that functions don’t have.
+* macros are expanded before the compiler interprets the meaning of the code, so a macro can, for example, implement a trait on a given type.
+
+### Declarative Macros with macro_rules! for General Metaprogramming
+
+```rust
+let v: Vec<u32> = vec![1, 2, 3];
+```
+
+Implementation:
+
+```rust
+#[macro_export]
+macro_rules! vec {
+    ( $( $x:expr ),* ) => {
+        {
+            let mut temp_vec = Vec::new();
+            $(
+                temp_vec.push($x);
+            )*
+            temp_vec
+        }
+    };
+}
+
+```
+
+The #[macro_export] annotation indicates that this macro should be made available whenever the crate in which we’re defining the macro is brought into scope. Without this annotation, the macro can’t be brought into scope.
+
+* dollar sign ($) followed by a set of parentheses, which captures values that match the pattern within the parentheses for use in the replacement code.
+* Within $() is $x:expr, which matches any Rust expression and gives the expression the name $x.
+* The * following the comma specifies that the pattern matches zero or more of whatever precedes the *
+* The $x pattern matches three times with the three expressions 1, 2, and 3.
+
+The generated code is:
+
+```rust
+let mut temp_vec = Vec::new();
+temp_vec.push(1);
+temp_vec.push(2);
+temp_vec.push(3);
+temp_vec
+```
+
+### Procedural Macros for Generating Code from Attributes
+
+The second form of macros is called procedural macros because they�re more like functions (which are a type of procedure). Procedural macros accept some Rust code as an input, operate on that code, and produce some Rust code as an output rather than matching against patterns and replacing the code with other code as declarative macros do.
+
+```rust
+use proc_macro;
+
+#[some_attribute]
+pub fn some_name(input: TokenStream) -> TokenStream {
+}
+```
+
+#### How to Write a Custom derive Macro
+
+```rust
+
+use hello_macro::HelloMacro;
+use hello_macro_derive::HelloMacro;
+
+#[derive(HelloMacro)]
+struct Pancakes;
+
+fn main() {
+    Pancakes::hello_macro();
+}
+```
+
+See `hello_macros/src/main.rs`.
+
+With our own implemented version, a default one:
+
+```rust
+extern crate proc_macro;
+
+use crate::proc_macro::TokenStream;
+use quote::quote;
+use syn;
+
+#[proc_macro_derive(HelloMacro)]
+pub fn hello_macro_derive(input: TokenStream) -> TokenStream {
+    // Construct a representation of Rust code as a syntax tree
+    // that we can manipulate
+    let ast = syn::parse(input).unwrap();
+
+    // Build the trait implementation
+    impl_hello_macro(&ast)
+}
+```
+
+See `hello_macros/hello_macro_derive/src/lib.rs`.
+
+### Attribute-like macros
+
+```rust
+#[route(GET, "/")]
+fn index() {
+```
+
+The macro would trigger a function with the VERB / Route and the `index` method...
+
+```rust
+#[proc_macro_attribute]
+pub fn route(attr: TokenStream, item: TokenStream) -> TokenStream {
+```
+
+### Function-like macros
+
+```rust
+let sql = sql!(SELECT * FROM posts WHERE id=1);
+```
+
+```rust
+#[proc_macro]
+pub fn sql(input: TokenStream) -> TokenStream {
+```
+
