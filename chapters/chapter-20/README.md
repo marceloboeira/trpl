@@ -182,3 +182,304 @@ fn handle_connection(mut stream: TcpStream) {
     stream.flush().unwrap();
 }
 ```
+
+## Turning Our Single-Threaded Server into a Multithreaded Server
+
+### Simulating a Slow Request in the Current Server Implementation
+
+Puts a sleep to demonstrate that the requests are sequencially happening...
+
+## Improving Throughput with a Thread Pool
+
+* A thread pool is a group of spawned threads that are waiting and ready to handle a task.
+* We’ll limit the number of threads in the pool to a small number to protect us from Denial of Service (DoS) attacks;
+
+### Code Structure If We Could Spawn a Thread for Each Request
+
+```rust
+fn main() {
+    let listener = TcpListener::bind("127.0.0.1:7878").unwrap();
+
+    for stream in listener.incoming() {
+        let stream = stream.unwrap();
+
+        thread::spawn(|| {
+            handle_connection(stream);
+        });
+    }
+}
+```
+
+### Creating a Similar Interface for a Finite Number of Threads
+
+Goal:
+
+```rust
+fn main() {
+    let listener = TcpListener::bind("127.0.0.1:7878").unwrap();
+    let pool = ThreadPool::new(4);
+
+    for stream in listener.incoming() {
+        let stream = stream.unwrap();
+
+        pool.execute(|| {
+            handle_connection(stream);
+        });
+    }
+}
+```
+
+### Building the ThreadPool Struct Using Compiler Driven Development
+
+```
+$ cargo check
+   Compiling hello v0.1.0 (file:///projects/hello)
+error[E0433]: failed to resolve. Use of undeclared type or module `ThreadPool`
+  --> src\main.rs:10:16
+   |
+10 |     let pool = ThreadPool::new(4);
+   |                ^^^^^^^^^^^^^^^ Use of undeclared type or module
+   `ThreadPool`
+
+error: aborting due to previous error
+```
+
+```rust
+pub struct ThreadPool;
+```
+
+...
+
+
+### Validating the Number of Threads in new
+
+```rust
+impl ThreadPool {
+    /// Create a new ThreadPool.
+    ///
+    /// The size is the number of threads in the pool.
+    ///
+    /// # Panics
+    ///
+    /// The `new` function will panic if the size is zero.
+    pub fn new(size: usize) -> ThreadPool {
+        assert!(size > 0);
+
+        ThreadPool
+    }
+
+    // --snip--
+}
+```
+
+### Creating Space to Store the Threads
+
+```rust
+pub fn spawn<F, T>(f: F) -> JoinHandle<T>
+    where
+        F: FnOnce() -> T + Send + 'static,
+        T: Send + 'static
+```
+
+But this errors:
+
+```rust
+use std::thread;
+
+pub struct ThreadPool {
+    threads: Vec<thread::JoinHandle<()>>,
+}
+
+impl ThreadPool {
+    // --snip--
+    pub fn new(size: usize) -> ThreadPool {
+        assert!(size > 0);
+
+        let mut threads = Vec::with_capacity(size);
+
+        for _ in 0..size {
+            // create some threads and store them in the vector
+        }
+
+        ThreadPool {
+            threads
+        }
+    }
+
+    // --snip--
+}
+```
+
+### A Worker Struct Responsible for Sending Code from the ThreadPool to a Thread
+
+* Each Worker will store a single JoinHandle<()> instance.
+* Define a Worker struct that holds an id and a JoinHandle<()>.
+* Change ThreadPool to hold a vector of Worker instances.
+* Define a Worker::new function that takes an id number and returns a Worker instance that holds the id and a thread spawned with an empty closure.
+* In ThreadPool::new, use the for loop counter to generate an id, create a new Worker with that id, and store the worker in the vector.
+
+```rust
+use std::thread;
+
+pub struct ThreadPool {
+    workers: Vec<Worker>,
+}
+
+impl ThreadPool {
+    // --snip--
+    pub fn new(size: usize) -> ThreadPool {
+        assert!(size > 0);
+
+        let mut workers = Vec::with_capacity(size);
+
+        for id in 0..size {
+            workers.push(Worker::new(id));
+        }
+
+        ThreadPool {
+            workers
+        }
+    }
+    // --snip--
+}
+
+struct Worker {
+    id: usize,
+    thread: thread::JoinHandle<()>,
+}
+
+impl Worker {
+    fn new(id: usize) -> Worker {
+        let thread = thread::spawn(|| {});
+
+        Worker {
+            id,
+            thread,
+        }
+    }
+}
+```
+
+### Sending Requests to Threads via Channels
+
+
+* The ThreadPool will create a channel and hold on to the sending side of the channel.
+* Each Worker will hold on to the receiving side of the channel.
+* We’ll create a new Job struct that will hold the closures we want to send down the channel.
+* The execute method will send the job it wants to execute down the sending side of the channel.
+* In its thread, the Worker will loop over its receiving side of the channel and execute the closures of any jobs it receives.
+
+
+```rust
+// --snip--
+use std::sync::mpsc;
+
+pub struct ThreadPool {
+    workers: Vec<Worker>,
+    sender: mpsc::Sender<Job>,
+}
+
+struct Job;
+
+impl ThreadPool {
+    // --snip--
+    pub fn new(size: usize) -> ThreadPool {
+        assert!(size > 0);
+
+        let (sender, receiver) = mpsc::channel();
+
+        let mut workers = Vec::with_capacity(size);
+
+        for id in 0..size {
+            workers.push(Worker::new(id));
+        }
+
+        ThreadPool {
+            workers,
+            sender,
+        }
+    }
+    // --snip--
+}
+```
+
+### Implementing the execute Method
+
+```rust
+// --snip--
+
+type Job = Box<FnOnce() + Send + 'static>;
+
+impl ThreadPool {
+    // --snip--
+
+    pub fn execute<F>(&self, f: F)
+        where
+            F: FnOnce() + Send + 'static
+    {
+        let job = Box::new(f);
+
+        self.sender.send(job).unwrap();
+    }
+}
+
+// --snip--
+```
+
+```rust
+trait FnBox {
+    fn call_box(self: Box<Self>);
+}
+
+impl<F: FnOnce()> FnBox for F {
+    fn call_box(self: Box<F>) {
+        (*self)()
+    }
+}
+
+type Job = Box<FnBox + Send + 'static>;
+
+// --snip--
+
+impl Worker {
+    fn new(id: usize, receiver: Arc<Mutex<mpsc::Receiver<Job>>>) -> Worker {
+        let thread = thread::spawn(move || {
+            loop {
+                let job = receiver.lock().unwrap().recv().unwrap();
+
+                println!("Worker {} got a job; executing.", id);
+
+                job.call_box();
+            }
+        });
+
+        Worker {
+            id,
+            thread,
+        }
+    }
+}
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
