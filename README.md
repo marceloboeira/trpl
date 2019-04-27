@@ -3,7 +3,7 @@
 
 At the moment, this is not really useful to anyone besides myself.
 
-More info: 📚 [marceloboeira](https://github.com/marceloboeira/knowledge)/[knowledge](https://github.com/marceloboeira/knowledge).
+More info: 📚 [marceloboeira](https://github.com/marceloboeira)/[knowledge](https://github.com/marceloboeira/knowledge).
 
 ## Table of Contents
 
