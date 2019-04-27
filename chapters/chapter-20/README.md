@@ -461,25 +461,132 @@ impl Worker {
 }
 ```
 
+## Graceful Shutdown and Cleanup
+
+Now we’ll implement the Drop trait to call join on each of the threads in the pool so they can finish the requests they’re working on before closing. Then we’ll implement a way to tell the threads they should stop accepting new requests and shut down. To see this code in action, we’ll modify our server to accept only two requests before gracefully shutting down its thread pool.
+
+### Implementing the Drop Trait on ThreadPool
+
+```rust
+impl Drop for ThreadPool {
+    fn drop(&mut self) {
+        for worker in &mut self.workers {
+            println!("Shutting down worker {}", worker.id);
+
+            worker.thread.join().unwrap();
+        }
+    }
+}
+```
 
 
+```rust
+impl Drop for ThreadPool {
+    fn drop(&mut self) {
+        for worker in &mut self.workers {
+            println!("Shutting down worker {}", worker.id);
 
+            if let Some(thread) = worker.thread.take() {
+                thread.join().unwrap();
+            }
+        }
+    }
+}
+```
 
+### Signaling to the Threads to Stop Listening for Jobs
 
+```rust
+enum Message {
+    NewJob(Job),
+    Terminate,
+}
+```
 
+```rust
+pub struct ThreadPool {
+    workers: Vec<Worker>,
+    sender: mpsc::Sender<Message>,
+}
 
+// --snip--
 
+impl ThreadPool {
+    // --snip--
 
+    pub fn execute<F>(&self, f: F)
+        where
+            F: FnOnce() + Send + 'static
+    {
+        let job = Box::new(f);
 
+        self.sender.send(Message::NewJob(job)).unwrap();
+    }
+}
 
+// --snip--
 
+impl Worker {
+    fn new(id: usize, receiver: Arc<Mutex<mpsc::Receiver<Message>>>) ->
+        Worker {
 
+        let thread = thread::spawn(move ||{
+            loop {
+                let message = receiver.lock().unwrap().recv().unwrap();
 
+                match message {
+                    Message::NewJob(job) => {
+                        println!("Worker {} got a job; executing.", id);
 
+                        job.call_box();
+                    },
+                    Message::Terminate => {
+                        println!("Worker {} was told to terminate.", id);
 
+                        break;
+                    },
+                }
+            }
+        });
 
+        Worker {
+            id,
+            thread: Some(thread),
+        }
+    }
+}
+```
 
+Then, finally:
 
+```rust
+impl Drop for ThreadPool {
+    fn drop(&mut self) {
+        println!("Sending terminate message to all workers.");
 
+        for _ in &mut self.workers {
+            self.sender.send(Message::Terminate).unwrap();
+        }
 
+        println!("Shutting down all workers.");
 
+        for worker in &mut self.workers {
+            println!("Shutting down worker {}", worker.id);
+
+            if let Some(thread) = worker.thread.take() {
+                thread.join().unwrap();
+            }
+        }
+    }
+}
+```
+
+### TODO Next
+
+We could do more here! If you want to continue enhancing this project, here are some ideas:
+
+* Add more documentation to ThreadPool and its public methods.
+* Add tests of the library’s functionality.
+* Change calls to unwrap to more robust error handling.
+* Use ThreadPool to perform some task other than serving web requests.
+* Find a thread pool crate on https://crates.io/ and implement a similar web server using the crate instead. Then compare its API and robustness to the thread pool we implemented.
